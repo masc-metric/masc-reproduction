@@ -47,15 +47,6 @@ manual-gate access to `google/siglip2-so400m-patch16-naflex`,
 HF_TOKEN=hf_...
 ```
 
-## Quick start: score one (reference, output, prompt) pair
-
-```bash
-python examples/score_sample.py
-```
-
-Expected output: `CP +0.6707  PF +0.0132` on the bundled
-[examples/sample_hat/](examples/sample_hat/).
-
 ## Datasets
 
 - **DreamBench++** → `data/dreambench_plus/`
@@ -284,7 +275,6 @@ deactivate
 ```
 masc-reproduction/
 ├── src/masc/                # MaSC package source (the released artifact)
-├── examples/                # end-to-end MaSC scoring on a single sample
 ├── tests/                   # pure-Python smoke tests (no GPU)
 ├── repro_eval/              # reproduction helpers
 │   ├── data.py              # DreamBench++ + ORIDa sample builders

@@ -68,7 +68,6 @@ include = [
     "pyproject.toml",
 ]
 exclude = [
-    "examples",
     "repro_eval",
     "scripts",
     "configs",
