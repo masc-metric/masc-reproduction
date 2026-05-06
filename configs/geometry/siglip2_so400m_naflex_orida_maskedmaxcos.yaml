@@ -1,0 +1,18 @@
+matcher: siglip2
+model_id: google/siglip2-so400m-patch16-naflex
+tag: orida_val_maskedmaxcos_naflex
+
+# Our winning CP recipe: masked_maxcos on SigLIP2 SO400M-NaFlex @ 1024 patches.
+score_type: masked_maxcos
+naflex_max_patches: 1024
+
+sample_source: orida
+signals: ["geometry"]
+
+# Validation-only smoke test: 10 subjects with disjoint capture environments.
+images_root: data/ORIDa/ORIDa_v1.0/validation
+masks_root: data/ORIDa/ORIDa_v1.0/validation  # unused; ORIDa ships paired masks
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+fg_threshold: 0.5

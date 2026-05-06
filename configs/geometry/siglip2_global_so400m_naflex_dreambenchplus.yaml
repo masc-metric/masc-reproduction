@@ -1,0 +1,18 @@
+matcher: siglip2_global
+# Same backbone as our masked-maxcos champion, but uses SigLIP2's *trained*
+# global image embedding (the joint image-text space output) — the missing
+# same-encoder ablation that isolates the contribution of masked-maxcos vs.
+# global pooled cosine.
+model_id: google/siglip2-so400m-patch16-naflex
+# Distinct tag so result files don't collide with the masked-maxcos run
+# (same `short_model_tag` = `siglip2-so400m`).
+tag: dreambenchplus_global_naflex
+
+naflex_max_patches: 1024
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]

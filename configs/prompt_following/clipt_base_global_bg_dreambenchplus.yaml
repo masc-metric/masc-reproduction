@@ -1,0 +1,17 @@
+matcher: clip-t
+model_id: openai/clip-vit-base-patch32
+tag: dreambenchplus_global_bg
+variant: global_bg
+
+# CLIP analog of SigLIP2's BG-masked pool. CLIP pools the CLS token;
+# we replace that with mean-pool over BG patches, then run CLIP's
+# post_layernorm + visual_projection to the joint space. NOTE: B/32
+# at 224 input gives a 7×7 = 49 patch grid — very coarse for
+# fg/bg separation. If the result is weak here, retry at CLIP-L/14
+# (16×16 = 256 patches).
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]

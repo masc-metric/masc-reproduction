@@ -1,0 +1,17 @@
+matcher: dinov3
+model_id: facebook/dinov3-vitb16-pretrain-lvd1689m
+tag: dreambenchplus
+
+# DreamBench++ pre-generated samples. Pass `--method <short_alias>` on
+# the CLI to select the generative method. Short aliases:
+# textual_inversion_sd, dreambooth_sd, dreambooth_lora_sdxl,
+# blip_diffusion, emu2, ip_adapter_plus_vit_h_sdxl, ip_adapter_vit_g_sdxl.
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 1024  # 64×64 patch grid at patch_size=16
+fg_threshold: 0.5

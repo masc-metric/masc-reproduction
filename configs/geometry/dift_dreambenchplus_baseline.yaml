@@ -1,0 +1,25 @@
+matcher: dift
+model_id: dift-sdxl-base
+checkpoint: stabilityai/stable-diffusion-xl-base-1.0
+tag: dreambenchplus_baseline
+
+# Vanilla-DIFT baseline: no fg mask, no mutuality, no recall formula.
+# Score = mean over all ref patches of (max cosine to any out patch).
+# This is the "beat me" bar for the mutual-NN recall_fg metric.
+score_type: global_maxcos
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 1024
+
+timestep: 101
+up_ft_index: 1
+prompt: ""
+seed: 0
+
+fg_threshold: 0.5  # unused by global_maxcos, kept for consistency

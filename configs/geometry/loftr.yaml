@@ -1,0 +1,25 @@
+matcher: loftr
+model_id: loftr-outdoor
+tag: dreambooth_refonly
+
+sample_source: dreambooth_refonly
+signals: ["geometry"]
+
+images_root: third_party/dreambooth/dataset
+masks_root: data/masks/dreambooth
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# LoFTR requires square grayscale input; 512 is a balance between
+# match density and memory. Must be divisible by 8.
+input_size: 512
+
+# kornia LoFTR's own confidence values live in ~[0, 1]; 0.2 is a
+# conservative default that keeps the obviously-spurious pairs out.
+confidence_threshold: 0.2
+
+# Mask-membership threshold at the resized mask grid.
+fg_threshold: 0.5
+
+# `pretrained` is consumed by kornia.feature.LoFTR; "outdoor" is closer
+# to typical DreamBooth scenes than "indoor" (ScanNet rooms).
+pretrained: outdoor

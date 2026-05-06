@@ -1,0 +1,20 @@
+matcher: siglip2-t
+model_id: google/siglip2-so400m-patch16-naflex
+tag: dreambenchplus_global_nosubj
+variant: global
+strip_subject: true
+skip_style: true
+
+# Full-image SigLIP2-T with subject stripping. Ablation control: if this
+# lifts too, the Δρ seen with global_bg_nosubj isn't from the BG-pool
+# interaction; it's just that the stripped prompt is a better PF target.
+# Expected: a smaller lift than global_bg_nosubj, because the subject
+# mention still contributes useful signal when the FG IS in the image.
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+naflex_max_patches: 1024

@@ -1,0 +1,23 @@
+matcher: dift
+model_id: dift-sdxl-canonical
+checkpoint: stabilityai/stable-diffusion-xl-base-1.0
+tag: orida_val_canonical
+
+score_type: masked_maxcos
+
+sample_source: orida
+signals: ["geometry"]
+
+images_root: data/ORIDa/ORIDa_v1.0/validation
+masks_root: data/ORIDa/ORIDa_v1.0/validation
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 1024
+
+# Paper recipe (see dreambenchplus variant for caveats).
+timestep: 261
+up_ft_index: 1
+prompt: ""
+seed: 0
+
+fg_threshold: 0.5

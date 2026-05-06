@@ -1,0 +1,15 @@
+matcher: radio_summary
+# AM-RADIO canonical baseline: summary-token cosine (analogous to CLIP-I / DINO-I).
+# This is the direct apples-to-apples baseline for AM-RADIO as an image
+# descriptor, since the paper does not propose a CP-specific recipe.
+model_id: nvidia/C-RADIOv4-SO400M
+tag: dreambenchplus_summary
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512

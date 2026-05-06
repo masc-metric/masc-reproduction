@@ -1,0 +1,19 @@
+segmenter: sam3
+
+input_kind: dreambenchplus_samples
+# Pass `--method <short_alias>` on the CLI, or set `method:` here.
+# Short aliases: textual_inversion_sd, dreambooth_sd, dreambooth_lora_sdxl,
+# blip_diffusion, emu2, ip_adapter_plus_vit_h_sdxl, ip_adapter_vit_g_sdxl.
+
+input_root: data/dreambench_plus/samples
+output_subdir: dreambench_plus/samples
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# Keyword per image is parsed from the subject directory name
+# (e.g. `live_subject_animal_00_kitten` → prompt="kitten"). The
+# method's full directory name is appended to output_subdir so
+# masks don't collide across methods.
+
+confidence_threshold: 0.5
+union_threshold: 0.5
+overwrite: false

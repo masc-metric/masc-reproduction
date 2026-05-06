@@ -1,0 +1,19 @@
+matcher: radio
+# C-RADIOv4-SO400M: agglomerative distillation of SigLIP2-g + DINOv3-7B + SAM3
+# into a single 431M-param ViT. Direct architectural counterpart to our SigLIP2
+# SO400M-NaFlex champion — same param footprint and patch grid (32x32 at 512x512),
+# but with SAM3 segmentation features baked into the patch manifold.
+model_id: nvidia/C-RADIOv4-SO400M
+tag: dreambenchplus_maskedmaxcos
+
+score_type: masked_maxcos
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+fg_threshold: 0.5

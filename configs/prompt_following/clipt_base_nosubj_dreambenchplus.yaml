@@ -1,0 +1,16 @@
+matcher: clip-t
+model_id: openai/clip-vit-base-patch32
+tag: dreambenchplus_nosubj
+variant: global
+strip_subject: true
+skip_style: true
+
+# CLIP-T with the object name stripped from the prompt. Control for the
+# so400m-naflex nosubj ablation: if stripping lifts CLIP-T too, it's a
+# universal prompt-preprocessing trick, not a SigLIP2 / BG-pool claim.
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]

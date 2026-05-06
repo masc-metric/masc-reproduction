@@ -1,0 +1,15 @@
+matcher: loftr
+model_id: loftr-outdoor
+tag: dreambenchplus
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+confidence_threshold: 0.2
+fg_threshold: 0.5
+pretrained: outdoor

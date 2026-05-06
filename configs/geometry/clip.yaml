@@ -1,0 +1,14 @@
+matcher: clip
+model_id: openai/clip-vit-base-patch16
+tag: dreambooth_refonly
+
+sample_source: dreambooth_refonly
+signals: ["geometry"]
+
+images_root: third_party/dreambooth/dataset
+masks_root: data/masks/dreambooth
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# CLIP pos-embeds fixed at 224 → 14×14 patch grid (196 patches).
+input_size: 224
+fg_threshold: 0.5

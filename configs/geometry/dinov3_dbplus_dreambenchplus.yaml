@@ -1,0 +1,16 @@
+matcher: dinov3_dbplus
+# Modern DINO baseline. DB++ ships dino_vits8 (DINOv1, ICCV 2021); 2024-26
+# personalization papers use DINOv2/v3. This is DINOv3-L/16 CLS-cosine on
+# the same DB++ DINO-I preprocessing recipe (Resize 256 BICUBIC -> CenterCrop
+# 224 -> ImageNet normalize).
+model_id: facebook/dinov3-vitl16-pretrain-lvd1689m
+tag: dreambenchplus_dbplus
+
+input_size: 224
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]

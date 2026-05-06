@@ -1,0 +1,14 @@
+scorer: imagereward
+# ImageReward (Xu et al., NeurIPS 2023). BLIP backbone fine-tuned on 137k
+# human pairwise preferences over generic SD outputs. Scalar reward.
+model_id: ImageReward-v1.0
+tag: dreambenchplus
+
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+skip_style: true

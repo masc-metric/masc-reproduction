@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.egg
+wheels/
+.eggs/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Local
+.env
+
+# Reproduction artifacts (large, regenerable)
+data/
+results/
+report/
+runlog/
+*.jsonl
+
+# HuggingFace / model caches (multi-GB, lazy-fetched on first use)
+.cache/
+hf_cache/
+.huggingface/
+
+# Vendored/symlinked third-party (not part of our code)
+third_party/

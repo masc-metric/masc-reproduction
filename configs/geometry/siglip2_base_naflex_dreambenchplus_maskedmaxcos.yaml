@@ -1,0 +1,24 @@
+matcher: siglip2
+model_id: google/siglip2-base-patch16-naflex
+# Distinct tag so result files don't collide with the non-NaFlex base-512
+# baseline (same `short_model_tag` = `siglip2-base`).
+tag: dreambenchplus_maskedmaxcos_naflex
+
+# Sweep point: NaFlex training (variable-resolution) on the same patch
+# count as the base-512 baseline (1024 patches at square input).
+# `naflex_max_patches: 1024` forces Hp=Wp=32 on DB++'s square images,
+# matching baseline granularity — isolates the training-data effect.
+score_type: masked_maxcos
+naflex_max_patches: 1024
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# input_size is a nominal hint for NaFlex; the actual grid is set by
+# max_num_patches at processor time (1024 → 32×32 for square inputs).
+input_size: 512
+fg_threshold: 0.5

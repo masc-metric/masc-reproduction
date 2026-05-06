@@ -1,0 +1,12 @@
+matcher: dinov3_dbplus
+model_id: facebook/dinov3-vitl16-pretrain-lvd1689m
+tag: orida_val_dbplus
+
+input_size: 224
+
+sample_source: orida
+signals: ["geometry"]
+
+images_root: data/ORIDa/ORIDa_v1.0/validation
+masks_root: data/ORIDa/ORIDa_v1.0/validation
+image_exts: [".jpg", ".jpeg", ".png"]

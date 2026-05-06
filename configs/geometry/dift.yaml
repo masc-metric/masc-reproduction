@@ -1,0 +1,28 @@
+matcher: dift
+model_id: dift-sdxl-base
+checkpoint: stabilityai/stable-diffusion-xl-base-1.0
+tag: dreambooth_refonly
+
+sample_source: dreambooth_refonly
+signals: ["geometry"]
+
+images_root: third_party/dreambooth/dataset
+masks_root: data/masks/dreambooth
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# SDXL native resolution. VAE downsamples by 8, up_blocks[1] outputs
+# at 1/4 of VAE-latent resolution → 128×128 features at input 1024.
+# Probed at runtime so the exact grid is inferred, not hardcoded.
+input_size: 1024
+
+# DIFT knobs. Paper uses t=261 for SD1.5; SDXL shares the 1000-step
+# DDPM schedule, but conventions for timestep / up_ft_index on SDXL
+# are not pinned in the literature — defaults below are a first pass.
+timestep: 101
+up_ft_index: 1
+prompt: ""
+seed: 0
+
+# A patch contributes to mutual-NN matching if its downsampled fg
+# weight exceeds this threshold.
+fg_threshold: 0.5

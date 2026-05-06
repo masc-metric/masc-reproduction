@@ -1,0 +1,23 @@
+matcher: roma
+model_id: roma-outdoor
+tag: dreambenchplus_maskedmaxcos
+
+# Ablation: mask + dense-certainty aggregator (no sampling, no mutuality,
+# no out-side mask). Tests whether the +0.3 α lift from swapping
+# recall_fg → masked_maxcos on ViT patch features (SigLIP2, DINOv3)
+# generalizes to a non-ViT matcher whose "per-ref-best-match" signal is
+# the model's learned dense warp certainty rather than a cosine.
+score_type: masked_maxcos
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# n_sample is unused in masked_maxcos (no sampling), kept for parity
+# with the recall_fg config so a shell sweep doesn't need per-variant
+# hyperparam gymnastics.
+n_sample: 5000
+fg_threshold: 0.5

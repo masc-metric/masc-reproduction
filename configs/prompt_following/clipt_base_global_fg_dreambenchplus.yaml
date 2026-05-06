@@ -1,0 +1,12 @@
+matcher: clip-t
+model_id: openai/clip-vit-base-patch32
+tag: dreambenchplus_global_fg
+variant: global_fg
+
+# Complement of clipt global_bg: mean-pool over FG patches. 7×7 grid.
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]

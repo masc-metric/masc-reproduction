@@ -1,0 +1,21 @@
+matcher: siglip2
+model_id: google/siglip2-so400m-patch16-naflex
+# Distinct tag so result files don't collide with so400m-patch16-naflex
+# masked_maxcos runs (same `short_model_tag` = `siglip2-so400m`).
+tag: dreambenchplus_weightedmaxcos_naflex
+
+# Soft fg-fraction weights (no 0.5 threshold). Every ref patch
+# contributes proportional to its fg coverage; boundary patches
+# contribute partially.
+score_type: weighted_maxcos
+naflex_max_patches: 1024
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+fg_threshold: 0.5

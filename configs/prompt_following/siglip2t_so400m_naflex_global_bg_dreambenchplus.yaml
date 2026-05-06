@@ -1,0 +1,22 @@
+matcher: siglip2-t
+model_id: google/siglip2-so400m-patch16-naflex
+tag: dreambenchplus_global_bg
+variant: global_bg
+
+# BG-masked attention pool on our CP champion (so400m-naflex @ 1024).
+# Same recipe as siglip2-base global_bg, extended to NaFlex: feed
+# pixel_attention_mask + spatial_shapes to the vision tower, then build
+# a key_padding_mask that excludes both padding AND FG patches from
+# the trained attention pooler.
+#
+# Closes the "one forward pass, two signals" story: CP (masked-maxcos
+# on fg patches, α = +0.466) and BG-PF (masked attention pool, ?) both
+# from this single SigLIP2 so400m-naflex checkpoint.
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+naflex_max_patches: 1024

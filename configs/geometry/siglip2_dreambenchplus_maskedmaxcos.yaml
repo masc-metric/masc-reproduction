@@ -1,0 +1,18 @@
+matcher: siglip2
+model_id: google/siglip2-base-patch16-512
+tag: dreambenchplus_maskedmaxcos
+
+# Ablation: mask restriction + global-maxcos aggregator (no mutuality,
+# no recall formula). Tests whether the mask buys signal for SigLIP2
+# features when we drop the strict recall formula.
+score_type: masked_maxcos
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+fg_threshold: 0.5

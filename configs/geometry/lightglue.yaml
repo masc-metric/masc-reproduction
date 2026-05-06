@@ -1,0 +1,17 @@
+matcher: lightglue
+model_id: superpoint-lightglue
+tag: dreambooth_refonly
+
+sample_source: dreambooth_refonly
+signals: ["geometry"]
+
+images_root: third_party/dreambooth/dataset
+masks_root: data/masks/dreambooth
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# LightGlue / SuperPoint knobs.
+max_num_keypoints: 2048
+
+# Mask-membership threshold: a keypoint counts as fg if the mask pixel
+# at its (x, y) is > fg_threshold * 255. 0.5 = majority-fg binarization.
+fg_threshold: 0.5

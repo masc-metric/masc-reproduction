@@ -1,0 +1,14 @@
+matcher: dreamsim
+# DreamSim ensemble (DINO + CLIP + OpenCLIP fine-tuned on NIGHTS triplets).
+# Global perceptual similarity — masks are ignored.
+model_id: dreamsim-ensemble
+dreamsim_type: ensemble
+cache_dir: .cache/dreamsim
+tag: orida_val
+
+sample_source: orida
+signals: ["geometry"]
+
+images_root: data/ORIDa/ORIDa_v1.0/validation
+masks_root: data/ORIDa/ORIDa_v1.0/validation
+image_exts: [".jpg", ".jpeg", ".png"]

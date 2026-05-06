@@ -1,0 +1,30 @@
+matcher: mast3r
+model_id: mast3r-vitl-512
+tag: dreambooth_refonly
+
+sample_source: dreambooth_refonly
+signals: ["geometry"]
+
+images_root: third_party/dreambooth/dataset
+masks_root: data/masks/dreambooth
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# Local checkpoint (gitignored). README-specified 512 catmlpdpt metric.
+checkpoint: third_party/mast3r/checkpoints/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric.pth
+
+# 512 long-side, cropped to multiple of patch_size=16. This matches
+# the MASt3R README usage example (`load_images([...], size=512)`).
+input_size: 512
+patch_size: 16
+
+# Coarse grid for fg-cell bookkeeping. 64 matches RoMa/LoFTR setups.
+coarse_grid: 64
+
+# `fast_reciprocal_NNs(subsample_or_initxy1=8)` per README example —
+# subsamples the dense descriptor grid by 8 before NN search.
+subsample_or_initxy1: 8
+
+# Ignore matches this close to the inference-image border (README).
+border: 3
+
+fg_threshold: 0.5

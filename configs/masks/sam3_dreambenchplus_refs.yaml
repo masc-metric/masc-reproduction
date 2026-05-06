@@ -1,0 +1,13 @@
+segmenter: sam3
+
+input_kind: dreambenchplus_refs
+input_root: data/dreambench_plus/images
+output_subdir: dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# Keyword per image is read from the first line of
+# `data/dreambench_plus/captions/<category>/<XX>.txt`.
+
+confidence_threshold: 0.5
+union_threshold: 0.5
+overwrite: false

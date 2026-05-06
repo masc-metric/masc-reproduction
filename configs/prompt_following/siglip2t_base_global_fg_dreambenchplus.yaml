@@ -1,0 +1,18 @@
+matcher: siglip2-t
+model_id: google/siglip2-base-patch16-512
+tag: dreambenchplus_global_fg
+variant: global_fg
+
+# Complement of global_bg: attention pool restricted to FG patches only.
+# Tests the opposite hypothesis — how much PF signal sits on the subject
+# region alone. If bg_global correlates and fg_global doesn't, the PF
+# signal is scene-localized (expected for "X in a sunny garden" prompts);
+# if both correlate similarly, the masking isn't spatially informative.
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512

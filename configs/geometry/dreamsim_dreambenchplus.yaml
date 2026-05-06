@@ -1,0 +1,14 @@
+matcher: dreamsim
+# DreamSim ensemble (DINO + CLIP + OpenCLIP fine-tuned on NIGHTS triplets).
+# Global perceptual similarity — masks are ignored.
+model_id: dreamsim-ensemble
+dreamsim_type: ensemble
+cache_dir: .cache/dreamsim
+tag: dreambenchplus
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]

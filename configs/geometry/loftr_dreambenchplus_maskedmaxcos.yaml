@@ -1,0 +1,25 @@
+matcher: loftr
+model_id: loftr-outdoor
+tag: dreambenchplus_maskedmaxcos
+
+# Ablation: mask + per-ref-best-match aggregator (no confidence
+# thresholding, no sparse NN extraction). Takes the row-wise max of
+# LoFTR's dual-softmax coarse assignment matrix as the per-ref-cell
+# "best-match probability," then averages under fg mask. Tests whether
+# the +0.3 α lift from recall_fg → masked_maxcos on ViT patch features
+# generalizes to LoFTR's coarse attention-based matcher.
+score_type: masked_maxcos
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+# confidence_threshold is unused in masked_maxcos (no thresholding);
+# kept for parity with the recall_fg config.
+confidence_threshold: 0.2
+fg_threshold: 0.5
+pretrained: outdoor

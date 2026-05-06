@@ -1,0 +1,17 @@
+matcher: radio_summary
+# AM-RADIO canonical baseline: summary-token cosine.
+model_id: nvidia/C-RADIOv4-SO400M
+tag: orida_train_diffbg
+
+sample_source: orida_diffbg
+signals: ["geometry"]
+
+builder_kwargs:
+  subjects_max: 25
+  backgrounds_per_subject: 10
+
+images_root: data/ORIDa/ORIDa_v1.0/train
+masks_root: data/ORIDa/ORIDa_v1.0/train
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512

@@ -1,0 +1,20 @@
+matcher: siglip2
+model_id: google/siglip2-so400m-patch16-naflex
+# Distinct tag so result files don't collide with so400m-patch16-512
+# (same `short_model_tag` = `siglip2-so400m`).
+tag: dreambenchplus_maskedmaxcos_naflex
+
+# Sweep point: NaFlex training on the SO400M backbone. 1024 max patches
+# for parity with so400m-512 on square DB++ inputs.
+score_type: masked_maxcos
+naflex_max_patches: 1024
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+fg_threshold: 0.5

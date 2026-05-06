@@ -1,0 +1,13 @@
+matcher: roma
+model_id: roma-outdoor
+tag: dreambenchplus
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+n_sample: 5000
+fg_threshold: 0.5

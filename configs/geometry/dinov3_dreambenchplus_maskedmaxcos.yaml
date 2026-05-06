@@ -1,0 +1,18 @@
+matcher: dinov3
+model_id: facebook/dinov3-vitb16-pretrain-lvd1689m
+tag: dreambenchplus_maskedmaxcos
+
+# Ablation: mask restriction + global-maxcos aggregator (no mutuality,
+# no recall formula). Tests whether the mask buys signal for DINOv3
+# features when we drop the strict recall formula.
+score_type: masked_maxcos
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 1024  # 64×64 patch grid at patch_size=16
+fg_threshold: 0.5

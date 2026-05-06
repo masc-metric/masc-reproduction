@@ -1,0 +1,16 @@
+matcher: dinov3_dbplus
+model_id: facebook/dinov3-vitl16-pretrain-lvd1689m
+tag: orida_train_diffbg_dbplus
+
+input_size: 224
+
+sample_source: orida_diffbg
+signals: ["geometry"]
+
+builder_kwargs:
+  subjects_max: 25
+  backgrounds_per_subject: 10
+
+images_root: data/ORIDa/ORIDa_v1.0/train
+masks_root: data/ORIDa/ORIDa_v1.0/train
+image_exts: [".jpg", ".jpeg", ".png"]

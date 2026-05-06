@@ -1,0 +1,14 @@
+matcher: siglip2-t
+model_id: google/siglip2-so400m-patch16-naflex
+tag: dreambenchplus_global_fg
+variant: global_fg
+
+# Complement of so400m-naflex global_bg: attention pool restricted to FG.
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+naflex_max_patches: 1024

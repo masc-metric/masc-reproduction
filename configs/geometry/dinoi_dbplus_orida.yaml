@@ -1,0 +1,14 @@
+matcher: dinoi_dbplus
+# DB++ original DINO-I recipe: DINO-v1 ViT-S/8 (dino_vits8) via torch.hub,
+# CLS-token cosine. model_id is used for output filenames only.
+model_id: dino-vits8-dbplus
+hub_repo: facebookresearch/dino:main
+hub_model: dino_vits8
+tag: orida_val_dbplus
+
+sample_source: orida
+signals: ["geometry"]
+
+images_root: data/ORIDa/ORIDa_v1.0/validation
+masks_root: data/ORIDa/ORIDa_v1.0/validation
+image_exts: [".jpg", ".jpeg", ".png"]

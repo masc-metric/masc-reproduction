@@ -1,0 +1,12 @@
+matcher: siglip2_global
+model_id: google/siglip2-so400m-patch16-naflex
+tag: orida_val_global_naflex
+
+naflex_max_patches: 1024
+
+sample_source: orida
+signals: ["geometry"]
+
+images_root: data/ORIDa/ORIDa_v1.0/validation
+masks_root: data/ORIDa/ORIDa_v1.0/validation
+image_exts: [".jpg", ".jpeg", ".png"]

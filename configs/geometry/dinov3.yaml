@@ -1,0 +1,21 @@
+matcher: dinov3
+model_id: facebook/dinov3-vitb16-pretrain-lvd1689m
+tag: dreambooth_refonly
+
+# Which samples to score. Same pair-construction recipe as the
+# `bg_leakage` smoke test: image[0] of each concept is the ref,
+# images[1:] are the stand-in outputs. Reuses existing masks.
+sample_source: dreambooth_refonly
+
+signals: ["geometry"]
+
+images_root: third_party/dreambooth/dataset
+masks_root: data/masks/dreambooth
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# Patch-match knobs. input_size must be divisible by model patch_size (16).
+input_size: 512
+
+# A patch contributes to mutual-NN matching if its downsampled fg weight
+# exceeds this threshold. 0.5 = majority-foreground patches.
+fg_threshold: 0.5

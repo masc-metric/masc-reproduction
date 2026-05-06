@@ -1,0 +1,18 @@
+matcher: siglip2_global
+model_id: google/siglip2-so400m-patch16-naflex
+tag: orida_train_50x10_global_naflex
+
+naflex_max_patches: 1024
+
+# 50 subjects × 10 backgrounds × 1 photo per (subject, background) —
+# matches the canonical CP-on-ORIDa lineup in plot_orida_cp.py.
+sample_source: orida_diffbg
+signals: ["geometry"]
+
+builder_kwargs:
+  subjects_max: 50
+  backgrounds_per_subject: 10
+
+images_root: data/ORIDa/ORIDa_v1.0/train
+masks_root: data/ORIDa/ORIDa_v1.0/train
+image_exts: [".jpg", ".jpeg", ".png"]

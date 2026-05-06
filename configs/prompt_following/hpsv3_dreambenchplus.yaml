@@ -1,0 +1,14 @@
+scorer: hpsv3
+# HPSv3 (Ma et al., 2025, arXiv:2503.10628). Qwen2-VL-based reward
+# trained on HPDv3 human preferences.
+model_id: MizzenAI/HPSv3
+tag: dreambenchplus
+
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+skip_style: true

@@ -1,0 +1,29 @@
+matcher: dift
+model_id: dift-sdxl-canonical
+checkpoint: stabilityai/stable-diffusion-xl-base-1.0
+tag: orida_train_50x10_canonical
+
+score_type: masked_maxcos
+
+# 50 subjects × 10 backgrounds × 1 photo per (subject, background) —
+# matches the canonical CP-on-ORIDa lineup in plot_orida_cp.py.
+sample_source: orida_diffbg
+signals: ["geometry"]
+
+builder_kwargs:
+  subjects_max: 50
+  backgrounds_per_subject: 10
+
+images_root: data/ORIDa/ORIDa_v1.0/train
+masks_root: data/ORIDa/ORIDa_v1.0/train
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 1024
+
+# Paper recipe (see dreambenchplus variant for caveats).
+timestep: 261
+up_ft_index: 1
+prompt: ""
+seed: 0
+
+fg_threshold: 0.5

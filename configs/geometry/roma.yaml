@@ -1,0 +1,18 @@
+matcher: roma
+model_id: roma-outdoor
+tag: dreambooth_refonly
+
+sample_source: dreambooth_refonly
+signals: ["geometry"]
+
+images_root: third_party/dreambooth/dataset
+masks_root: data/masks/dreambooth
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# 64×64 coarse grid = LoFTR-comparable denominator at this scale.
+coarse_grid: 64
+
+# RoMa.sample(num=N) draws N high-certainty matches from the dense warp.
+n_sample: 5000
+
+fg_threshold: 0.5

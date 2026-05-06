@@ -1,0 +1,17 @@
+matcher: siglip2-t
+model_id: google/siglip2-so400m-patch16-naflex
+tag: dreambenchplus_naflex
+
+# SigLIP2-T global PF on our CP champion backbone. Tests whether the
+# SO400M+NaFlex lift we saw on concept preservation (α: 0.320 → 0.466)
+# also applies to prompt following. If yes, the "one backbone for both
+# channels" story holds for the full metric.
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+naflex_max_patches: 1024

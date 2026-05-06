@@ -1,0 +1,15 @@
+matcher: radio_summary
+# AM-RADIO canonical baseline: summary-token cosine (analogous to CLIP-I / DINO-I).
+# This is the direct apples-to-apples baseline for AM-RADIO as an image
+# descriptor, since the paper does not propose a CP-specific recipe.
+model_id: nvidia/C-RADIOv4-SO400M
+tag: orida_val_summary
+
+sample_source: orida
+signals: ["geometry"]
+
+images_root: data/ORIDa/ORIDa_v1.0/validation
+masks_root: data/ORIDa/ORIDa_v1.0/validation
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512

@@ -1,0 +1,24 @@
+matcher: siglip2-t
+model_id: google/siglip2-so400m-patch16-naflex
+tag: dreambenchplus_global_bg_nosubj
+variant: global_bg
+strip_subject: true
+skip_style: true
+
+# BG-pool PF with the object name stripped from the prompt. Uses DB++'s
+# canonical human-readable object name (line 1 of captions/<cat>/<idx>.txt,
+# e.g. "piggy bank", "t-shirt") rather than the underscored folder form.
+# Regex drops "(a|an|the) <object>" then bare "<object>"; grammar may
+# break but scene content survives.
+#
+# `skip_style: true` excludes the 20 style subjects — for them the
+# "object name" is the visual style ("pencil sketch"), so stripping
+# leaves dangling fragments like "in style" which dilute the signal.
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+naflex_max_patches: 1024

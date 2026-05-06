@@ -1,0 +1,39 @@
+matcher: dift
+# DIFT canonical-leaning recipe: paper hyperparameters as close as we can
+# get without invasive module changes.
+#
+# Paper (Tang et al., NeurIPS 2023, arXiv:2306.03881) recommends for SD1.5:
+#   timestep=261, up_ft_index=1, n_ensemble=8, concept-aware prompt.
+# SDXL has no published DIFT convention; we keep the SD1.5 timestep choice
+# and document remaining deviations:
+#   - n_ensemble=1 (paper: 8). Single noise draw is the default in this
+#     codebase; n_ensemble averaging requires a module change. Leaves
+#     residual variance on the table but does not change rank.
+#   - prompt="" (paper: concept-aware). Threading per-sample object names
+#     through the matcher requires a module change.
+# Both deviations are documented in REPORT 2026-04-26 audit.
+model_id: dift-sdxl-canonical
+checkpoint: stabilityai/stable-diffusion-xl-base-1.0
+tag: dreambenchplus_canonical
+
+# Use masked-maxcos so the result is directly comparable to our SigLIP2
+# recipe row in the headline table; raw recall_fg / global_maxcos / masked_maxcos
+# are all also recorded in `extras` of every row, so we can re-aggregate later.
+score_type: masked_maxcos
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 1024
+
+# Paper recipe.
+timestep: 261
+up_ft_index: 1
+prompt: ""
+seed: 0
+
+fg_threshold: 0.5

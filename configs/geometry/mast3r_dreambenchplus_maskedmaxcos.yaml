@@ -1,0 +1,28 @@
+matcher: mast3r
+model_id: mast3r-vitl-512
+tag: dreambenchplus_maskedmaxcos
+
+# Ablation: mask + dense-descriptor maxcos aggregator (no mutual-NN,
+# no border filter, no out-side mask). L2-normalize MASt3R's dense
+# descriptor maps, compute ref × out cosine, take row-wise max per ref
+# descriptor, average under fg mask. Tests whether MASt3R's 3D-aware
+# descriptors carry more / less concept-identity signal than SigLIP2's
+# contrastive patch tokens when evaluated with the same aggregator.
+score_type: masked_maxcos
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+checkpoint: third_party/mast3r/checkpoints/MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric.pth
+
+input_size: 512
+patch_size: 16
+# subsample_or_initxy1 and border are unused in masked_maxcos (no NN
+# search, no border filter); kept for parity with the recall_fg config.
+subsample_or_initxy1: 8
+border: 3
+fg_threshold: 0.5

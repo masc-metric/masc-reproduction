@@ -1,0 +1,12 @@
+matcher: clipi_dbplus
+# DB++ original CLIP-I recipe: openai/clip-vit-base-patch32,
+# get_image_features projection head, L2-normalized cosine.
+model_id: openai/clip-vit-base-patch32
+tag: orida_val_dbplus
+
+sample_source: orida
+signals: ["geometry"]
+
+images_root: data/ORIDa/ORIDa_v1.0/validation
+masks_root: data/ORIDa/ORIDa_v1.0/validation
+image_exts: [".jpg", ".jpeg", ".png"]

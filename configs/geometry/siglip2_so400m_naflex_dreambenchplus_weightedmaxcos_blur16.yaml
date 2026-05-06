@@ -1,0 +1,20 @@
+matcher: siglip2
+model_id: google/siglip2-so400m-patch16-naflex
+# Sigma-16px pre-blur of the ref mask widens the boundary band from
+# ~3 patches per sample to ~500 (49% of the grid), giving the weighted
+# aggregator real soft weights to work with.
+tag: dreambenchplus_weightedmaxcos_naflex_blur16
+
+score_type: weighted_maxcos
+naflex_max_patches: 1024
+mask_blur_sigma: 16.0
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+fg_threshold: 0.5

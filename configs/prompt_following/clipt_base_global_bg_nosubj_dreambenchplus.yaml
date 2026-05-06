@@ -1,0 +1,21 @@
+matcher: clip-t
+model_id: openai/clip-vit-base-patch32
+tag: dreambenchplus_global_bg_nosubj
+variant: global_bg
+strip_subject: true
+skip_style: true
+
+# CLIP-T with BOTH of the tricks we apply to SigLIP2 (BG-masked pool +
+# subject stripping). Full-parity comparison — if CLIP under its best
+# configuration still trails SigLIP2, the backbone choice is defended;
+# if it matches or beats, the SigLIP2 pitch needs re-framing.
+# Note: CLIP's pool is "take CLS" (not an attention pool), so BG-pool
+# here = mean-pool of BG patches through post_layernorm + visual_projection,
+# which is OOD for heads trained on CLS outputs. Expected to fail, but
+# running for honest comparison.
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus/refs
+image_exts: [".jpg", ".jpeg", ".png"]
