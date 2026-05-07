@@ -1,0 +1,11 @@
+segmenter: clipseg
+model_id: CIDAS/clipseg-rd64-refined
+
+input_kind: dreambenchplus_refs
+input_root: data/dreambench_plus/images
+output_subdir: dreambench_plus_clipseg/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+# Sigmoid threshold on the upscaled logit map.
+threshold: 0.5
+overwrite: false

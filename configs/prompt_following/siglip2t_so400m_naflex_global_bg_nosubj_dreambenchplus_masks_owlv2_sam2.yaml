@@ -1,0 +1,18 @@
+matcher: siglip2-t
+model_id: google/siglip2-so400m-patch16-naflex
+# Mask-source sensitivity sweep: PF BG-pool (subject-stripped) using
+# OWLv2 + SAM2 masks instead of SAM3. Distinct tag so result files
+# don't collide with the SAM3 default.
+tag: dreambenchplus_global_bg_nosubj_masks_owlv2_sam2
+variant: global_bg
+strip_subject: true
+skip_style: true
+
+sample_source: dreambenchplus
+signals: ["prompt_following"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus_owlv2_sam2/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+naflex_max_patches: 1024

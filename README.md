@@ -258,7 +258,56 @@ python scripts/plot_dreambenchplus_cp.py   # full table now includes these rows
 Paper claim Δα(masked − recall): **+0.462** on SigLIP2 patch features,
 **+0.716** on DINOv3 patch features.
 
-### 6. Table 5 — Compute and runtime
+### 6. Mask-source robustness (CP and PF)
+
+Holds MaSC's matcher fixed (SigLIP2-so400m-naflex masked-maxcos for CP,
+SigLIP2-so400m-naflex BG-pool subject-stripped for PF) and swaps the
+upstream segmenter for CLIPSeg, Grounded-SAM2, and OWLv2+SAM2. Each
+segmenter's masks pass through the same 5% min-fg-fraction filter, so
+each row sees a different surviving subset; α and ρ are reported on
+the intersection of keys present under every segmenter for an
+apples-to-apples comparison.
+
+```bash
+DBPP=(dreambooth_sd dreambooth_lora_sdxl textual_inversion_sd
+      blip_diffusion emu2
+      ip_adapter_plus_vit_h_sdxl ip_adapter_vit_g_sdxl)
+
+# Generate ref + sample masks for each alternative segmenter.
+for src in clipseg grounded_sam2 owlv2_sam2; do
+  python scripts/generate_masks.py --config configs/masks/${src}_dreambenchplus_refs.yaml
+  for m in "${DBPP[@]}"; do
+    python scripts/generate_masks.py \
+      --config configs/masks/${src}_dreambenchplus_samples.yaml --method $m
+  done
+done
+
+# CP runs (one per alt segmenter × method).
+for src in clipseg grounded_sam2 owlv2_sam2; do
+  for m in "${DBPP[@]}"; do
+    python scripts/compute_geometry.py \
+      --config configs/geometry/siglip2_so400m_naflex_dreambenchplus_maskedmaxcos_masks_${src}.yaml \
+      --method $m
+  done
+done
+
+# PF runs (one per alt segmenter × method).
+for src in clipseg grounded_sam2 owlv2_sam2; do
+  for m in "${DBPP[@]}"; do
+    python scripts/compute_prompt_following.py \
+      --config configs/prompt_following/siglip2t_so400m_naflex_global_bg_nosubj_dreambenchplus_masks_${src}.yaml \
+      --method $m
+  done
+done
+
+python scripts/plot_mask_source_robustness.py      # CP table
+python scripts/plot_pf_mask_source_robustness.py   # PF table
+```
+
+The SAM3 baseline rows reuse the geometry / PF JSONLs from sections 1
+and 3 — no extra compute. Tables land at `report/tables/{,pf_}mask_source_robustness.md`.
+
+### 7. Table 5 — Compute and runtime
 
 Per-pair latency on a single fixed DB++ pair, each metric in its own
 subprocess with `torch.cuda.synchronize()`. Reported on RTX 3090.

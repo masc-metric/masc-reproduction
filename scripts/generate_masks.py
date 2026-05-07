@@ -47,6 +47,29 @@ def load_segmenter_from_cfg(cfg: dict):
             confidence_threshold=cfg.get("confidence_threshold", 0.5),
             union_threshold=cfg.get("union_threshold", 0.5),
         )
+    if name == "clipseg":
+        from repro_eval.masks.clipseg import load_segmenter
+        return load_segmenter(
+            model_id=cfg.get("model_id", "CIDAS/clipseg-rd64-refined"),
+            threshold=cfg.get("threshold", 0.5),
+        )
+    if name == "grounded_sam2":
+        from repro_eval.masks.grounded_sam2 import load_segmenter
+        return load_segmenter(
+            gdino_model_id=cfg.get("gdino_model_id", "IDEA-Research/grounding-dino-base"),
+            sam_model_id=cfg.get("sam_model_id", "facebook/sam2.1-hiera-large"),
+            box_threshold=cfg.get("box_threshold", 0.3),
+            text_threshold=cfg.get("text_threshold", 0.25),
+            mask_threshold=cfg.get("mask_threshold", 0.0),
+        )
+    if name == "owlv2_sam2":
+        from repro_eval.masks.owlv2_sam2 import load_segmenter
+        return load_segmenter(
+            owl_model_id=cfg.get("owl_model_id", "google/owlv2-base-patch16-ensemble"),
+            sam_model_id=cfg.get("sam_model_id", "facebook/sam2.1-hiera-large"),
+            score_threshold=cfg.get("score_threshold", 0.2),
+            mask_threshold=cfg.get("mask_threshold", 0.0),
+        )
     raise ValueError(f"Unknown segmenter: {name}")
 
 

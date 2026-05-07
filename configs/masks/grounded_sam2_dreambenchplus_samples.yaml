@@ -1,0 +1,13 @@
+segmenter: grounded_sam2
+gdino_model_id: IDEA-Research/grounding-dino-base
+sam_model_id: facebook/sam2.1-hiera-large
+
+input_kind: dreambenchplus_samples
+input_root: data/dreambench_plus/samples
+output_subdir: dreambench_plus_grounded_sam2/samples
+image_exts: [".jpg", ".jpeg", ".png"]
+
+box_threshold: 0.3
+text_threshold: 0.25
+mask_threshold: 0.0
+overwrite: false

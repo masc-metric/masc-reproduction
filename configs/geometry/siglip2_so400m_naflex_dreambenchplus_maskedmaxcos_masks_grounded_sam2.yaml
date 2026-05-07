@@ -1,0 +1,17 @@
+matcher: siglip2
+model_id: google/siglip2-so400m-patch16-naflex
+# Mask-source sensitivity sweep: masks come from Grounding-DINO + SAM2.
+tag: dreambenchplus_maskedmaxcos_naflex_masks_grounded_sam2
+
+score_type: masked_maxcos
+naflex_max_patches: 1024
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus_grounded_sam2/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+fg_threshold: 0.5

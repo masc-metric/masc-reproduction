@@ -1,0 +1,18 @@
+matcher: siglip2
+model_id: google/siglip2-so400m-patch16-naflex
+# Mask-source sensitivity sweep: masks come from CLIPSeg instead of SAM3.
+# Distinct tag so result files don't collide with the SAM3 default.
+tag: dreambenchplus_maskedmaxcos_naflex_masks_clipseg
+
+score_type: masked_maxcos
+naflex_max_patches: 1024
+
+sample_source: dreambenchplus
+signals: ["geometry"]
+
+images_root: data/dreambench_plus/images
+masks_root: data/masks/dreambench_plus_clipseg/refs
+image_exts: [".jpg", ".jpeg", ".png"]
+
+input_size: 512
+fg_threshold: 0.5
