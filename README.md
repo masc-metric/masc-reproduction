@@ -1,8 +1,14 @@
 # MaSC — Reproduction Repository
 
-Anonymous repository accompanying the paper submission. Contains the
-released [`masc`](src/masc/) Python package plus everything needed to
-reproduce every numbered table and figure end-to-end from raw data.
+[**Paper**](https://arxiv.org/abs/2605.22469) ·
+[**Project page**](https://masc-metric.github.io/) ·
+[**Package**](https://github.com/masc-metric/masc) ·
+[**PyPI**](https://pypi.org/project/masc-metric/)
+
+Reproduction code for *MaSC: A Masked Similarity Metric for Evaluating
+Concept-Driven Generation* (NeurIPS 2026, Evaluations & Datasets Track).
+Contains the released [`masc`](src/masc/) Python package plus everything
+needed to reproduce every numbered table and figure end-to-end from raw data.
 
 ![MaSC method diagram](assets/method_diagram.png)
 
@@ -346,6 +352,17 @@ Every JSONL row has the schema:
   "model": "siglip2-so400m",
   "score": 0.731,
   "extras": {"...per-model diagnostics..."}
+}
+```
+
+## Citation
+
+```bibtex
+@article{bartkowiak2026masc,
+  title={MaSC: A Masked Similarity Metric for Evaluating Concept-Driven Generation},
+  author={Bartkowiak, Patryk and Petersen, Lennart and Kotrys, Bartosz and Michels, Dominik and Pirk, Soren and Palubicki, Wojtek},
+  journal={arXiv preprint arXiv:2605.22469},
+  year={2026}
 }
 ```
 
