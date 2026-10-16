@@ -82,12 +82,18 @@ class PatchFgMatcher:
     # 32×32 grid with patch_size=16, sigma=16 ≈ one patch wide.
     # 0.0 disables (default, matches baseline masked_maxcos behavior).
     mask_blur_sigma: float = 0.0
+    # When True, `fg_match` also returns `arrays`: the per-reference-patch
+    # max cosine to any output patch and the reference patch grid. Both are
+    # mask-independent, so masked_maxcos for any other reference mask is
+    # mean(nn_cos_per_ref[downsample(mask) > fg_threshold]) (the appendix
+    # mask-boundary analysis recomputes it on CPU this way).
+    return_arrays: bool = False
 
     @torch.inference_mode()
     def _embed_patches(
         self, image: Image.Image, fg_mask: np.ndarray
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Return (patch_tokens (N, D), fg_weights (N,) in [0, 1])."""
+    ) -> tuple[torch.Tensor, torch.Tensor, tuple[int, int]]:
+        """Return (patch_tokens (N, D), fg_weights (N,) in [0, 1], (Hp, Wp))."""
         if self.naflex_processor is not None:
             return self._embed_patches_naflex(image, fg_mask)
 
@@ -100,12 +106,12 @@ class PatchFgMatcher:
         Hp = Wp = self.input_size // self.patch_size
         assert patch_tokens.shape[0] == Hp * Wp, (patch_tokens.shape, Hp, Wp)
 
-        return patch_tokens, fg.flatten().to(patch_tokens.dtype)
+        return patch_tokens, fg.flatten().to(patch_tokens.dtype), (Hp, Wp)
 
     @torch.inference_mode()
     def _embed_patches_naflex(
         self, image: Image.Image, fg_mask: np.ndarray
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    ) -> tuple[torch.Tensor, torch.Tensor, tuple[int, int]]:
         """NaFlex path: pre-patchification via the processor, which emits
         variable-size (pixel_values, pixel_attention_mask, spatial_shapes)
         triples. For our square DB++ inputs we resolve to a fixed Hp×Wp
@@ -136,7 +142,7 @@ class PatchFgMatcher:
         assert patch_tokens.shape[0] == Hp * Wp, (patch_tokens.shape, Hp, Wp)
 
         fg = self._downsample_mask(fg_mask, Hp, Wp)
-        return patch_tokens, fg.flatten().to(patch_tokens.dtype)
+        return patch_tokens, fg.flatten().to(patch_tokens.dtype), (Hp, Wp)
 
     def fg_match(
         self,
@@ -145,8 +151,8 @@ class PatchFgMatcher:
         out_image: Image.Image,
         out_fg_mask: np.ndarray,
     ) -> dict:
-        ref_tok, ref_w = self._embed_patches(ref_image, ref_fg_mask)
-        out_tok, out_w = self._embed_patches(out_image, out_fg_mask)
+        ref_tok, ref_w, ref_grid = self._embed_patches(ref_image, ref_fg_mask)
+        out_tok, out_w, _ = self._embed_patches(out_image, out_fg_mask)
 
         ref_unit = F.normalize(ref_tok, dim=-1)
         out_unit = F.normalize(out_tok, dim=-1)
@@ -199,7 +205,7 @@ class PatchFgMatcher:
         else:
             raise ValueError(f"Unknown score_type: {self.score_type!r}")
 
-        return {
+        result = {
             "score": score,
             "extras": {
                 "score_type": self.score_type,
@@ -218,6 +224,12 @@ class PatchFgMatcher:
                 "total_ref_w": total_ref_w,
             },
         }
+        if self.return_arrays:
+            result["arrays"] = {
+                "nn_cos_per_ref": nn_cos_per_ref.float().cpu().numpy(),
+                "ref_grid": [int(ref_grid[0]), int(ref_grid[1])],
+            }
+        return result
 
     def _preprocess_image(self, image: Image.Image) -> torch.Tensor:
         img = image.convert("RGB").resize(

@@ -1,7 +1,21 @@
 """Compute geometry (concept-fidelity) signal over (ref, out, ref_mask, out_mask).
 
 Writes one JSONL row per sample to
-`results/geometry__<model>__<tag>.jsonl`.
+`results/geometry__<model>__<tag>.jsonl`. Resumable: rows already in the
+output file (same concept, prompt, method, seed, ref, out) are skipped and new
+rows are appended.
+
+Options used by the appendix analyses (README, "Appendix"):
+    --method a,b,c           several DreamBench++ methods, model loaded once
+    --min-fg-fraction none   score every DreamBench++ pair (no mask-area
+                             filter); thresholds are applied afterwards from
+                             the foreground fractions stored in each row
+    --tag-suffix _nofilter   keep such runs apart from the default files
+    --dump-patch-arrays      (patch-feature matchers) also write each
+                             reference patch's max cosine and the patch grid
+                             to results/aux/<result>.patch_arrays.jsonl, from
+                             which CP under any other reference mask follows
+    --max-samples N          smoke tests
 
 Usage:
     python scripts/compute_geometry.py --config configs/geometry/dinov3.yaml
@@ -9,6 +23,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import sys
 import time
@@ -23,6 +38,15 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from repro_eval.data import REPO_ROOT, RESULTS_DIR, SAMPLE_BUILDERS  # noqa: E402
+from repro_eval.runs import (  # noqa: E402
+    BUILDER_DEFAULT,
+    load_once,
+    method_list,
+    min_fg_fraction,
+    read_done_keys,
+    terminate_partial_line,
+    write_run_meta,
+)
 
 
 def load_matcher(cfg: dict):
@@ -146,13 +170,13 @@ def short_model_tag(model_id: str) -> str:
     return name
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--config", required=True, type=Path)
-    ap.add_argument("--method", type=str, default=None,
-                    help="DreamBench++ method short alias (overrides config)")
-    args = ap.parse_args()
+def _row_key(r: dict) -> tuple:
+    ex = r.get("extras", {})
+    return (r["concept_id"], str(r["prompt_id"]), r["gen_method"], r["seed"],
+            ex.get("ref"), ex.get("out"))
 
+
+def run(args: argparse.Namespace, method: str | None) -> int:
     cfg = yaml.safe_load(args.config.read_text())
     images_root = (REPO_ROOT / cfg["images_root"]).resolve()
     masks_root = (REPO_ROOT / cfg["masks_root"]).resolve()
@@ -163,29 +187,58 @@ def main() -> int:
 
     sample_source = cfg["sample_source"]
     builder = SAMPLE_BUILDERS[sample_source]
-    method = args.method or cfg.get("method")
-    builder_kwargs = cfg.get("builder_kwargs", {}) or {}
+    method = method or cfg.get("method")
+    builder_kwargs = dict(cfg.get("builder_kwargs", {}) or {})
+    if args.min_fg_fraction is not BUILDER_DEFAULT:
+        if sample_source != "dreambenchplus":
+            raise ValueError("--min-fg-fraction applies to DreamBench++ only")
+        builder_kwargs["min_fg_fraction"] = args.min_fg_fraction
     if sample_source == "dreambenchplus":
         samples = builder(images_root, masks_root, exts, method=method, **builder_kwargs)
+        keys = [f"{s['concept_id']}-{s['prompt_id']}" for s in samples]
+        if len(keys) != len(set(keys)):
+            raise RuntimeError("duplicate concept-prompt keys: several seeds per prompt "
+                               "would collide in the rating join")
     else:
         samples = builder(images_root, masks_root, exts, **builder_kwargs)
+    if args.max_samples is not None:
+        samples = samples[: args.max_samples]
     print(f"Built {len(samples)} samples from {sample_source}"
           + (f" (method={method})" if method else ""))
 
     model_tag = short_model_tag(cfg["model_id"])
-    tag = cfg["tag"]
+    tag = cfg["tag"] + args.tag_suffix
     if method:
         tag = f"{tag}_{method}"
     out_path = RESULTS_DIR / f"geometry__{model_tag}__{tag}.jsonl"
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    aux_path = RESULTS_DIR / "aux" / f"{out_path.stem}.patch_arrays.jsonl"
     print(f"Writing to {out_path}")
+    terminate_partial_line(out_path)
+    terminate_partial_line(aux_path)
+    done = read_done_keys(out_path, _row_key)
+    if done:
+        print(f"  resume: {len(done)} rows already present, skipping them")
 
-    matcher = load_matcher(cfg)
+    matcher = load_once(json.dumps(cfg, sort_keys=True), lambda: load_matcher(cfg))
+    if args.dump_patch_arrays:
+        if not hasattr(matcher, "return_arrays"):
+            raise ValueError(f"--dump-patch-arrays needs a PatchFgMatcher, got {type(matcher)}")
+        matcher.return_arrays = True
+        aux_path.parent.mkdir(parents=True, exist_ok=True)
     use_ref_mask_on_out = bool(cfg.get("use_ref_mask_on_out", False))
+    write_run_meta(out_path, config=cfg, config_path=args.config.resolve(),
+                   model_ids=[cfg.get("model_id", ""), cfg.get("checkpoint", "")],
+                   argv=sys.argv, extra={"n_samples": len(samples), "n_done_before": len(done)})
 
     t0 = time.time()
-    with out_path.open("w") as f:
+    n_new = 0
+    aux_f = aux_path.open("a") if args.dump_patch_arrays else None
+    with out_path.open("a") as f:
         for i, s in enumerate(samples, 1):
+            if (s["concept_id"], str(s["prompt_id"]), s["gen_method"], s["seed"],
+                    s["ref_image"].name, s["out_image"].name) in done:
+                continue
             ref_img = Image.open(s["ref_image"])
             out_img = Image.open(s["out_image"])
             ref_mask_pil = Image.open(s["ref_mask"])
@@ -220,14 +273,53 @@ def main() -> int:
                 "score": res["score"],
                 "extras": extras,
             }
+            if aux_f is not None:
+                arr = res["arrays"]["nn_cos_per_ref"].astype("<f4")
+                aux_f.write(json.dumps({
+                    "concept_id": s["concept_id"], "prompt_id": s["prompt_id"],
+                    "gen_method": s["gen_method"], "seed": s["seed"],
+                    "ref": s["ref_image"].name, "out": s["out_image"].name,
+                    "ref_grid": res["arrays"]["ref_grid"],
+                    "nn_cos_per_ref_f32_b64": base64.b64encode(arr.tobytes()).decode(),
+                }) + "\n")
+                aux_f.flush()
             f.write(json.dumps(row) + "\n")
-            print(
-                f"  [{i:>3}/{len(samples)}] {s['concept_id']}"
-                f"  {s['ref_image'].name}<->{s['out_image'].name}"
-                f"  score={res['score']:.3f}"
-            )
-    print(f"Done: wrote {len(samples)} rows to {out_path} in {time.time()-t0:.1f}s")
+            f.flush()
+            n_new += 1
+            if n_new % 50 == 0 or i == len(samples):
+                print(
+                    f"  [{i:>4}/{len(samples)}] {s['concept_id']}"
+                    f"  {s['ref_image'].name}<->{s['out_image'].name}"
+                    f"  score={res['score']:.3f}"
+                    f"  ({(time.time() - t0) / n_new:.3f} s/pair)"
+                )
+    if aux_f is not None:
+        aux_f.close()
+    print(f"Done: wrote {n_new} new rows to {out_path} in {time.time()-t0:.1f}s")
     return 0
+
+
+def parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
+    ap.add_argument("--config", required=True, type=Path)
+    ap.add_argument("--method", type=method_list, default=[None],
+                    help="DreamBench++ method short alias(es), comma-separated "
+                         "(overrides the config)")
+    ap.add_argument("--min-fg-fraction", type=min_fg_fraction, default=BUILDER_DEFAULT,
+                    help="DreamBench++ mask-area filter; 'none' scores every pair "
+                         "(default: the builder's 0.05)")
+    ap.add_argument("--tag-suffix", type=str, default="")
+    ap.add_argument("--dump-patch-arrays", action="store_true")
+    ap.add_argument("--max-samples", type=int, default=None)
+    return ap
+
+
+def main() -> int:
+    args = parser().parse_args()
+    rc = 0
+    for method in args.method:
+        rc |= run(args, method)
+    return rc
 
 
 if __name__ == "__main__":

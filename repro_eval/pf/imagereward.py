@@ -43,6 +43,11 @@ def load_scorer(
     model_id: str = DEFAULT_MODEL,
     device: str = "cuda",
 ) -> ImageRewardScorer:
+    import os
+
     import ImageReward as RM  # noqa: N814 — package name
-    model = RM.load(model_id, device=device)
+    # Without a root, ImageReward writes ~1.8 GB to ~/.cache/ImageReward.
+    root = os.environ.get("IMAGEREWARD_HOME")
+    model = RM.load(model_id, device=device, download_root=root) if root else \
+        RM.load(model_id, device=device)
     return ImageRewardScorer(model=model, model_id=model_id)
