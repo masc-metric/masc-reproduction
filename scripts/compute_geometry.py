@@ -176,6 +176,10 @@ def _row_key(r: dict) -> tuple:
             ex.get("ref"), ex.get("out"))
 
 
+def _aux_key(r: dict) -> tuple:
+    return (r["concept_id"], str(r["prompt_id"]), r["gen_method"], r["seed"], r["ref"], r["out"])
+
+
 def run(args: argparse.Namespace, method: str | None) -> int:
     cfg = yaml.safe_load(args.config.read_text())
     images_root = (REPO_ROOT / cfg["images_root"]).resolve()
@@ -217,6 +221,12 @@ def run(args: argparse.Namespace, method: str | None) -> int:
     terminate_partial_line(out_path)
     terminate_partial_line(aux_path)
     done = read_done_keys(out_path, _row_key)
+    if args.dump_patch_arrays and done:
+        n_arrays = len(read_done_keys(aux_path, _aux_key))
+        if n_arrays < len(done):
+            raise RuntimeError(
+                f"{out_path} has {len(done)} rows but only {n_arrays} have patch arrays; resuming "
+                "would skip them. Remove the result file or pass another --tag-suffix.")
     if done:
         print(f"  resume: {len(done)} rows already present, skipping them")
 
