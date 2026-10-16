@@ -57,6 +57,7 @@ dev = [
 repro = [
     "pyyaml>=6.0",
     "scipy>=1.10",
+    "pandas>=2.0",
     "matplotlib>=3.7",
     "python-dotenv>=1.0",
     "spacy>=3.8,<4",
