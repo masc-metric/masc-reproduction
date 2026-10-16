@@ -64,9 +64,14 @@ def build_dreambenchplus_samples(
     *,
     method: str | None = None,
     samples_root: Path | None = None,
-    min_fg_fraction: float = 0.05,
+    min_fg_fraction: float | None = 0.05,
 ) -> list[dict]:
     """Pair each DreamBench++ generation from `method` with its reference.
+
+    `min_fg_fraction=None` disables the mask-area filter: every pair is
+    returned, and each sample carries the pixel foreground fractions of both
+    masks (`extras.fg_frac_ref_mask`, `extras.fg_frac_out_mask`) so any
+    threshold can be applied afterwards.
 
     Expected disk layout (from the DreamBench++ README):
 
@@ -118,7 +123,7 @@ def build_dreambenchplus_samples(
     captions_root = DREAMBENCHPLUS_DIR / "captions"
 
     samples: list[dict] = []
-    n_dropped_ref = n_dropped_out = 0
+    n_dropped_ref = n_dropped_out = n_missing_out_mask = 0
     for subject_dir in sorted(p for p in tgt_root.iterdir() if p.is_dir()):
         cat_path, idx, keyword = parse_dreambenchplus_subject(subject_dir.name)
 
@@ -126,7 +131,8 @@ def build_dreambenchplus_samples(
         ref_mask = (masks_root / cat_path / f"{idx}").with_suffix(".png")
         if not ref_img.exists() or not ref_mask.exists():
             continue
-        if _ref_fg_frac(ref_mask) <= min_fg_fraction:
+        ref_frac = _ref_fg_frac(ref_mask)
+        if min_fg_fraction is not None and ref_frac <= min_fg_fraction:
             n_dropped_ref += sum(1 for _ in subject_dir.iterdir())
             continue
 
@@ -152,8 +158,10 @@ def build_dreambenchplus_samples(
 
             out_mask = (sample_masks_root / subject_dir.name / stem).with_suffix(".png")
             if not out_mask.exists():
+                n_missing_out_mask += 1
                 continue
-            if mask_fg_fraction(out_mask) <= min_fg_fraction:
+            out_frac = mask_fg_fraction(out_mask)
+            if min_fg_fraction is not None and out_frac <= min_fg_fraction:
                 n_dropped_out += 1
                 continue
 
@@ -178,6 +186,8 @@ def build_dreambenchplus_samples(
                     "object_name": object_name,
                     "prompt_text": prompt_text,
                     "method_full": method_full,
+                    "fg_frac_ref_mask": ref_frac,
+                    "fg_frac_out_mask": out_frac,
                 },
             })
 
@@ -187,6 +197,9 @@ def build_dreambenchplus_samples(
             f"{n_dropped_ref} pairs (ref mask <= {min_fg_fraction:.0%}), "
             f"{n_dropped_out} pairs (out mask <= {min_fg_fraction:.0%})"
         )
+    if n_missing_out_mask:
+        print(f"[dreambenchplus:{method}] skipped {n_missing_out_mask} pairs "
+              f"with no output mask file")
     return samples
 
 

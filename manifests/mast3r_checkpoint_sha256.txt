@@ -1,0 +1,1 @@
+e28f91b488554653e2b46ddae9c78c1143e0bcb2e27d3e26cdb0b717f1568eb2  MASt3R_ViTLarge_BaseDecoder_512_catmlpdpt_metric.pth

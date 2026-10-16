@@ -77,5 +77,9 @@ def load_scorer(
         except ImportError:
             pass
     import t2v_metrics
-    model = t2v_metrics.VQAScore(model=model_id, device=device)
+    # t2v_metrics defaults to cache_dir="./hf_cache/" (the working directory);
+    # point it at the shared Hugging Face hub cache when one is configured.
+    cache_dir = os.environ.get("HF_HUB_CACHE")
+    model = (t2v_metrics.VQAScore(model=model_id, device=device, cache_dir=cache_dir)
+             if cache_dir else t2v_metrics.VQAScore(model=model_id, device=device))
     return VQAScoreScorer(model=model, model_id=model_id)

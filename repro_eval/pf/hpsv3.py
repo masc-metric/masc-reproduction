@@ -55,7 +55,13 @@ def load_scorer(
     from hpsv3 import HPSv3RewardInferencer
     # `model_id` is informational; HPSv3RewardInferencer auto-downloads the
     # MizzenAI/HPSv3 checkpoint when checkpoint_path is None.
-    inferencer = HPSv3RewardInferencer(device=device)
+    import os
+    # HPSV3_CHECKPOINT: a local copy of the 16.6 GB checkpoint. Loading it from
+    # a network file system (Lustre) can stall for tens of minutes; a copy on
+    # local disk or /dev/shm avoids that.
+    ckpt = os.environ.get("HPSV3_CHECKPOINT")
+    inferencer = (HPSv3RewardInferencer(device=device, checkpoint_path=ckpt) if ckpt
+                  else HPSv3RewardInferencer(device=device))
     # The Qwen2-VL 7B backbone loads in fp32 (~28 GB) and OOMs a 24 GB GPU.
     # Cast to bf16 — matches HPSv3's own batched-inference example at
     # `hpsv3/inference.py` (`dtype = torch.bfloat16`).

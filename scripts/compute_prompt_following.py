@@ -20,12 +20,18 @@ Usage:
     python scripts/compute_prompt_following.py \\
         --config configs/prompt_following/{clipt,siglip2t}_<...>.yaml \\
         --method <dreambenchplus_method>
+
+Options used by the appendix analyses (README, "Appendix"): `--method a,b,c`
+(model loaded once), `--min-fg-fraction none` (score every pair; filter
+afterwards from the stored foreground fractions), `--tag-suffix`,
+`--max-samples`, and `--stripper {regex,spacy,none}` (overrides the config's
+`stripper`, which defaults to `regex` when `strip_subject: true`). Resumable:
+rows already in the output file are skipped and new rows are appended.
 """
 from __future__ import annotations
 
 import argparse
 import json
-import re
 import sys
 import time
 from pathlib import Path
@@ -40,27 +46,32 @@ _REPO = Path(__file__).resolve().parent.parent
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from repro_eval.data import RESULTS_DIR, SAMPLE_BUILDERS, REPO_ROOT  # noqa: E402
+from masc.text import strip_subject_from_prompt as _masc_strip  # noqa: E402
+from repro_eval.data import REPO_ROOT, RESULTS_DIR, SAMPLE_BUILDERS  # noqa: E402
+from repro_eval.runs import (  # noqa: E402
+    BUILDER_DEFAULT,
+    load_once,
+    method_list,
+    min_fg_fraction,
+    read_done_keys,
+    terminate_partial_line,
+    write_run_meta,
+)
 
 
 def is_clip_model(model_id: str) -> bool:
     return model_id.startswith("openai/clip-")
 
 
-def strip_subject_from_prompt(prompt: str, object_name: str) -> str:
+def strip_subject_from_prompt(prompt: str, object_name: str, method: str = "regex") -> str:
     """Remove the subject/object name from a DB++ prompt so only the
     scene description survives. "A photo of a kitten chasing a butterfly
     in a sunny garden" + object='kitten' → "A photo of chasing a butterfly
-    in a sunny garden". Tries "(a|an|the) <object>" first, then bare
-    "<object>". re.escape handles hyphens and multi-word objects like
-    'piggy bank' / 't-shirt'. Collapses whitespace at the end.
+    in a sunny garden". Delegates to `masc.text`, the package
+    implementation: `regex` (the paper's stripper, default), `spacy`
+    (syntax-aware, optional extra) or `none`.
     """
-    obj = re.escape(object_name.strip())
-    for pat in (rf"\b(?:a|an|the)\s+{obj}\b", rf"\b{obj}\b"):
-        if re.search(pat, prompt, flags=re.IGNORECASE):
-            prompt = re.sub(pat, "", prompt, flags=re.IGNORECASE)
-            break
-    return re.sub(r"\s+", " ", prompt).strip()
+    return _masc_strip(prompt, object_name, stripper=method)
 
 
 def short_model_tag(model_id: str) -> str:
@@ -324,12 +335,11 @@ def score_pair_clip(model, processor, out_image: Image.Image, prompt_text: str,
     return float((img_n * txt_n).sum(-1)[0].cpu())
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--config", required=True, type=Path)
-    ap.add_argument("--method", type=str, default=None)
-    args = ap.parse_args()
+def _row_key(r: dict) -> tuple:
+    return (r["concept_id"], str(r["prompt_id"]), r["gen_method"], r["seed"])
 
+
+def run(args: argparse.Namespace, method: str | None) -> int:
     cfg = yaml.safe_load(args.config.read_text())
     images_root = (REPO_ROOT / cfg["images_root"]).resolve()
     masks_root = (REPO_ROOT / cfg["masks_root"]).resolve()
@@ -337,20 +347,29 @@ def main() -> int:
 
     sample_source = cfg["sample_source"]
     builder = SAMPLE_BUILDERS[sample_source]
-    method = args.method or cfg.get("method")
+    method = method or cfg.get("method")
+    builder_kwargs = {}
+    if args.min_fg_fraction is not BUILDER_DEFAULT:
+        builder_kwargs["min_fg_fraction"] = args.min_fg_fraction
     if sample_source == "dreambenchplus":
-        samples = builder(images_root, masks_root, exts, method=method)
+        samples = builder(images_root, masks_root, exts, method=method, **builder_kwargs)
     else:
-        samples = builder(images_root, masks_root, exts)
+        samples = builder(images_root, masks_root, exts, **builder_kwargs)
+    if args.max_samples is not None:
+        samples = samples[: args.max_samples]
     print(f"Built {len(samples)} samples from {sample_source}"
           + (f" (method={method})" if method else ""))
 
     model_id = cfg["model_id"]
     model_tag = short_model_tag(model_id)
-    tag = cfg["tag"] + (f"_{method}" if method else "")
+    tag = cfg["tag"] + args.tag_suffix + (f"_{method}" if method else "")
     out_path = RESULTS_DIR / f"prompt_following__{model_tag}__{tag}.jsonl"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     print(f"Writing to {out_path}")
+    terminate_partial_line(out_path)
+    done = read_done_keys(out_path, _row_key)
+    if done:
+        print(f"  resume: {len(done)} rows already present, skipping them")
 
     device = cfg.get("device", "cuda")
     naflex_max_patches = int(cfg.get("naflex_max_patches", 1024))
@@ -364,30 +383,40 @@ def main() -> int:
         raise ValueError(f"CLIP backend does not support variant={variant!r}.")
     print(f"Loading {model_id} ... (backend={'clip' if is_clip else 'siglip2'}, variant={variant})")
     t0 = time.time()
-    if is_clip:
-        from transformers import CLIPModel, CLIPProcessor
-        processor = CLIPProcessor.from_pretrained(model_id)
-        model = CLIPModel.from_pretrained(model_id).eval().to(device)
-    else:
+    def _load():
+        if is_clip:
+            from transformers import CLIPModel, CLIPProcessor
+            return (CLIPProcessor.from_pretrained(model_id),
+                    CLIPModel.from_pretrained(model_id).eval().to(device))
         from transformers import AutoModel, AutoProcessor
-        processor = AutoProcessor.from_pretrained(model_id)
-        model = AutoModel.from_pretrained(model_id).eval().to(device)
+        return (AutoProcessor.from_pretrained(model_id),
+                AutoModel.from_pretrained(model_id).eval().to(device))
+    processor, model = load_once(f"{model_id}|{device}", _load)
     print(f"  loaded in {time.time()-t0:.1f}s")
 
     pad_id = getattr(processor.tokenizer, "pad_token_id", 0) or 0
     eos_id = getattr(processor.tokenizer, "eos_token_id", 1) or 1
 
     strip_subject = bool(cfg.get("strip_subject", False))
+    stripper = args.stripper or cfg.get("stripper", "regex")
+    if args.stripper is not None and not strip_subject:
+        raise ValueError("--stripper needs a config with strip_subject: true")
     skip_style = bool(cfg.get("skip_style", False))
+    write_run_meta(out_path, config=cfg, config_path=args.config.resolve(),
+                   model_ids=[model_id], argv=sys.argv,
+                   extra={"n_samples": len(samples), "n_done_before": len(done),
+                          "stripper": stripper if strip_subject else None})
     if strip_subject:
-        print(f"  strip_subject=True  (removes object name from prompt before scoring)")
+        print(f"  strip_subject=True  stripper={stripper}")
     if skip_style:
-        print(f"  skip_style=True  (drops style_* subjects)")
+        print("  skip_style=True  (drops style_* subjects)")
 
     t0 = time.time()
-    n_skipped = 0
-    with out_path.open("w") as f:
+    n_skipped = n_new = 0
+    with out_path.open("a") as f:
         for i, s in enumerate(samples, 1):
+            if (s["concept_id"], str(s["prompt_id"]), s["gen_method"], s["seed"]) in done:
+                continue
             extras_in = s.get("extras", {})
             prompt_text = extras_in.get("prompt_text", "")
             if not prompt_text:
@@ -400,7 +429,8 @@ def main() -> int:
             if strip_subject:
                 object_name = extras_in.get("object_name", "")
                 if object_name:
-                    prompt_text = strip_subject_from_prompt(prompt_text, object_name)
+                    prompt_text = strip_subject_from_prompt(prompt_text, object_name,
+                                                            method=stripper)
             out_img = Image.open(s["out_image"])
             n_tok = n_patch = None
             extras_mask = None
@@ -436,6 +466,7 @@ def main() -> int:
             if strip_subject:
                 extras["prompt_stripped"] = prompt_text
                 extras["prompt_orig"] = orig_prompt
+                extras["stripper"] = stripper
             if not is_clip:
                 extras["naflex_max_patches"] = naflex_max_patches
             extras["variant"] = variant
@@ -455,11 +486,34 @@ def main() -> int:
                 "extras": extras,
             }
             f.write(json.dumps(row) + "\n")
+            f.flush()
+            n_new += 1
             if i % 50 == 0 or i == len(samples):
                 print(f"  [{i:>4}/{len(samples)}]  cos={score:.3f}")
-    print(f"Done: wrote {len(samples) - n_skipped} rows (skipped {n_skipped} empty prompts) "
+    print(f"Done: wrote {n_new} new rows (skipped {n_skipped} empty-prompt/style rows) "
           f"in {time.time()-t0:.1f}s")
     return 0
+
+
+def parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
+    ap.add_argument("--config", required=True, type=Path)
+    ap.add_argument("--method", type=method_list, default=[None],
+                    help="DreamBench++ method short alias(es), comma-separated")
+    ap.add_argument("--min-fg-fraction", type=min_fg_fraction, default=BUILDER_DEFAULT,
+                    help="DreamBench++ mask-area filter; 'none' scores every pair")
+    ap.add_argument("--tag-suffix", type=str, default="")
+    ap.add_argument("--max-samples", type=int, default=None)
+    ap.add_argument("--stripper", choices=["regex", "spacy", "none"], default=None)
+    return ap
+
+
+def main() -> int:
+    args = parser().parse_args()
+    rc = 0
+    for method in args.method:
+        rc |= run(args, method)
+    return rc
 
 
 if __name__ == "__main__":

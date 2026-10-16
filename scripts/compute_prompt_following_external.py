@@ -40,6 +40,15 @@ if str(_REPO_ROOT) not in sys.path:
 
 import repro_eval  # noqa: F401  — triggers .env loading
 from repro_eval.data import REPO_ROOT, RESULTS_DIR, SAMPLE_BUILDERS  # noqa: E402
+from repro_eval.runs import (  # noqa: E402
+    BUILDER_DEFAULT,
+    load_once,
+    method_list,
+    min_fg_fraction,
+    read_done_keys,
+    terminate_partial_line,
+    write_run_meta,
+)
 
 
 def load_scorer(cfg: dict):
@@ -65,26 +74,11 @@ def load_scorer(cfg: dict):
     raise ValueError(f"Unknown scorer: {name}")
 
 
-def _load_done_keys(out_path: Path) -> set[tuple]:
-    if not out_path.exists():
-        return set()
-    done: set[tuple] = set()
-    with out_path.open() as f:
-        for line in f:
-            try:
-                r = json.loads(line)
-            except Exception:
-                continue
-            done.add((r["concept_id"], r["prompt_id"], r["gen_method"], r["seed"]))
-    return done
+def _row_key(r: dict) -> tuple:
+    return (r["concept_id"], r["prompt_id"], r["gen_method"], r["seed"])
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--config", required=True, type=Path)
-    ap.add_argument("--method", type=str, default=None)
-    args = ap.parse_args()
-
+def run(args: argparse.Namespace, method: str | None) -> int:
     cfg = yaml.safe_load(args.config.read_text())
     images_root = (REPO_ROOT / cfg["images_root"]).resolve()
     masks_root = (REPO_ROOT / cfg["masks_root"]).resolve()
@@ -92,32 +86,41 @@ def main() -> int:
 
     sample_source = cfg["sample_source"]
     builder = SAMPLE_BUILDERS[sample_source]
-    method = args.method or cfg.get("method")
+    method = method or cfg.get("method")
+    builder_kwargs = {}
+    if args.min_fg_fraction is not BUILDER_DEFAULT:
+        builder_kwargs["min_fg_fraction"] = args.min_fg_fraction
     if sample_source == "dreambenchplus":
-        samples = builder(images_root, masks_root, exts, method=method)
+        samples = builder(images_root, masks_root, exts, method=method, **builder_kwargs)
     else:
-        samples = builder(images_root, masks_root, exts)
+        samples = builder(images_root, masks_root, exts, **builder_kwargs)
+    if args.max_samples is not None:
+        samples = samples[: args.max_samples]
     print(f"Built {len(samples)} samples from {sample_source}"
           + (f" (method={method})" if method else ""))
 
     scorer_name = cfg["scorer"]
-    tag = cfg["tag"] + (f"_{method}" if method else "")
+    tag = cfg["tag"] + args.tag_suffix + (f"_{method}" if method else "")
     out_path = RESULTS_DIR / f"prompt_following__{scorer_name}__{tag}.jsonl"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     print(f"Writing to {out_path}")
 
-    done = _load_done_keys(out_path)
+    terminate_partial_line(out_path)
+    done = read_done_keys(out_path, _row_key)
     if done:
         print(f"  resume: {len(done)} keys already present, will skip")
 
+    write_run_meta(out_path, config=cfg, config_path=args.config.resolve(),
+                   model_ids=[cfg.get("model_id", "")], argv=sys.argv,
+                   extra={"n_samples": len(samples), "n_done_before": len(done)})
     print(f"Loading scorer={scorer_name} ...")
     t0 = time.time()
-    scorer = load_scorer(cfg)
+    scorer = load_once(json.dumps(cfg, sort_keys=True), lambda: load_scorer(cfg))
     print(f"  loaded in {time.time()-t0:.1f}s")
 
     skip_style = bool(cfg.get("skip_style", False))
     if skip_style:
-        print(f"  skip_style=True  (drops style_* subjects)")
+        print("  skip_style=True  (drops style_* subjects)")
 
     t0 = time.time()
     n_skipped = n_done = 0
@@ -167,6 +170,26 @@ def main() -> int:
     print(f"Done: wrote {n_done} new rows (skipped {n_skipped} prompt-empty/style) "
           f"in {time.time()-t0:.1f}s")
     return 0
+
+
+def parser() -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
+    ap.add_argument("--config", required=True, type=Path)
+    ap.add_argument("--method", type=method_list, default=[None],
+                    help="DreamBench++ method short alias(es), comma-separated")
+    ap.add_argument("--min-fg-fraction", type=min_fg_fraction, default=BUILDER_DEFAULT,
+                    help="DreamBench++ mask-area filter; 'none' scores every pair")
+    ap.add_argument("--tag-suffix", type=str, default="")
+    ap.add_argument("--max-samples", type=int, default=None)
+    return ap
+
+
+def main() -> int:
+    args = parser().parse_args()
+    rc = 0
+    for method in args.method:
+        rc |= run(args, method)
+    return rc
 
 
 if __name__ == "__main__":
