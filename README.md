@@ -7,8 +7,10 @@
 
 Reproduction code for *MaSC: A Masked Similarity Metric for Evaluating
 Concept-Driven Generation* (NeurIPS 2026, Evaluations & Datasets Track).
-Contains the released [`masc`](src/masc/) Python package plus everything
-needed to reproduce every numbered table and figure end-to-end from raw data.
+Contains the released [`masc`](src/masc/) Python package plus the code that
+rebuilds the paper's numbered tables, figures and appendix analyses from raw
+data. The few numbers that need a paid API or the original hardware are
+listed under [What is not regenerated](#what-is-not-regenerated).
 
 ![MaSC method diagram](assets/method_diagram.png)
 
@@ -31,6 +33,7 @@ its rating from data shipped with DreamBench++.
 ```bash
 pip install -e ".[repro]"
 pip install "torch>=2.6" torchvision --index-url https://download.pytorch.org/whl/cu128
+python -m spacy download en_core_web_sm   # spaCy stripper and the PF prompt strata (section 8)
 ```
 
 Three of the comparators (VQAScore, ImageReward, HPSv3) pin older
@@ -105,7 +108,10 @@ done
 python scripts/plot_dreambenchplus_cp.py
 ```
 
-Expected pooled α (paper rows; reviewer reproductions land within ±0.005):
+Expected pooled α (paper rows). The paper's matched set has 7,135 keys.
+Masks regenerated with the released code differ slightly from the
+paper-time masks near the 5% area filter, so a rerun matches on 7,304 keys
+and lands within ±0.007 α of these values:
 
 | Row | Paper α | Source |
 | --- | ---: | --- |
@@ -133,8 +139,11 @@ python scripts/reproduce_dbplus_kdo.py
 ### 2. Table 2 — Concept Preservation on ORIDa
 
 ```bash
+# MaSC also stores its per-patch matches, which section 8 reuses.
+python scripts/compute_geometry.py \
+  --config configs/geometry/siglip2_so400m_naflex_orida_50x10.yaml --dump-patch-arrays
+
 for cfg in \
-  siglip2_so400m_naflex_orida_50x10 \
   siglip2_global_so400m_naflex_orida_50x10 \
   dreamsim_orida_50x10 \
   dinov3_dbplus_orida_50x10 \
@@ -161,7 +170,9 @@ Expected AUC(within > cross):
 | DIFT-SDXL canonical | 0.834 |
 | CLIP-I | 0.800 |
 
-Renders Figure 2 (`report/figures/orida_cp_violins.{png,pdf}`).
+Renders Figure 2 (`report/figures/orida_cp_violins.{png,pdf}`). The
+table's confidence intervals and descriptive columns come from
+`scripts/appendix/orida_auc_ci.py` (section 8).
 
 ### 3. Table 3 — Prompt Following on DreamBench++
 
@@ -192,7 +203,8 @@ deactivate
 python scripts/compute_new_pf_baselines.py
 ```
 
-Expected pooled α:
+Expected pooled α (the paper's style-excluded set has 6,607 keys; a rerun
+matches on 6,605):
 
 | Scorer | Paper α |
 | --- | ---: |
@@ -325,19 +337,95 @@ python scripts/benchmark_speed_pf_baselines.py       # PF-side
 deactivate
 ```
 
+### 8. Table 2 intervals and the appendix analyses
+
+The appendix analyses evaluate every metric on the same keys under several
+mask-area thresholds, so they start from runs that score every DreamBench++
+pair and apply the filter afterwards. CP for a perturbed reference mask is
+recomputed on CPU from MaSC's stored per-patch matches, so no GPU run is
+needed per perturbation.
+
+**Scoring runs** (GPU; on top of sections 2 and 3):
+
+```bash
+M=dreambooth_sd,dreambooth_lora_sdxl,textual_inversion_sd,blip_diffusion,emu2,ip_adapter_plus_vit_h_sdxl,ip_adapter_vit_g_sdxl
+ALL="--method $M --min-fg-fraction none --tag-suffix _nofilter"
+
+# CP: MaSC (with per-patch matches) and the comparators of the appendix tables
+python scripts/compute_geometry.py $ALL --dump-patch-arrays \
+  --config configs/geometry/siglip2_so400m_naflex_dreambenchplus_maskedmaxcos.yaml
+for cfg in siglip2_global_so400m_naflex_dreambenchplus dreamsim_dreambenchplus \
+           dinov3_dbplus_dreambenchplus; do
+  python scripts/compute_geometry.py $ALL --config configs/geometry/${cfg}.yaml
+done
+
+# PF: MaSC, full pool x full prompt, BG pool x full prompt, and MaSC with spaCy stripping
+for cfg in siglip2t_so400m_naflex_global_bg_nosubj_dreambenchplus \
+           siglip2t_so400m_naflex_dreambenchplus \
+           siglip2t_so400m_naflex_global_bg_dreambenchplus; do
+  python scripts/compute_prompt_following.py $ALL --config configs/prompt_following/${cfg}.yaml
+done
+python scripts/compute_prompt_following.py --method $M --min-fg-fraction none \
+  --tag-suffix _nofilter_spacy --stripper spacy \
+  --config configs/prompt_following/siglip2t_so400m_naflex_global_bg_nosubj_dreambenchplus.yaml
+```
+
+**Analyses** (CPU only; about 30 minutes on four cores at 10,000 bootstrap
+replicates, most of it the mask-area filtering table):
+
+```bash
+bash scripts/appendix/run_all.sh
+```
+
+`run_all.sh` first joins ratings, masks and scores into
+`results/analysis/dbpp_keys.csv.gz` (`build_key_table.py`), then runs one
+script per table. Each prints its table, writes
+`report/appendix/<name>.json`, and compares every number the paper prints
+with its own result; the run fails if any differs. The intervals are paired
+95% percentile bootstrap intervals with 10,000 replicates and a fixed seed
+per table, so they reproduce exactly. `--B 500` gives a quick run (the
+paper comparison then covers no intervals).
+
+| Paper | Script | Keys or pairs |
+| --- | --- | ---: |
+| Table 2, AUC 95% CI and descriptive columns | `orida_auc_ci.py` | 2,250 + 2,250 |
+| Appendix, mask-area filtering: threshold sweep, empty-mask treatments, MaSC − DreamSim (key and subject-cluster bootstrap), filtering audit | `mask_area_filtering.py` | 7,717 / 7,561 / 7,304 / 6,351; 8,694; 9,441 |
+| Appendix, mask boundaries: erosion and dilation of the reference mask on DreamBench++ and ORIDa, paired differences | `mask_boundaries.py` | 7,304; 2,250 + 2,250 |
+| Appendix, subject stripping: original prompt, regex, spaCy | `subject_stripping.py` | 6,605 |
+| Appendix, PF by prompt type: dependency and lexical strata | `pf_prompt_strata.py` | 6,605 and subsets |
+
+The key table carries DreamBench++ human ratings and prompts, which are not
+redistributable; it stays under the git-ignored `results/`.
+
+### What is not regenerated
+
+- **GPT-4o on ORIDa** (Table 2 row, Figure 2). Those ratings came from the
+  OpenAI API (`gpt-4o-2024-05-13`, temperature 1); this repository makes no
+  API calls. The GPT-4o and GPT-4V numbers on DreamBench++ are the ratings
+  shipped with the dataset.
+- **Gemini 3.5 Flash rephrasing** (subject-stripping appendix): a paid API
+  condition; the regex, spaCy and no-stripping rows are regenerated.
+- **Table 5 latencies** were measured on an RTX 3090; section 7 reruns the
+  same benchmark on your hardware.
+
 ## Repository layout
 
 ```
 masc-reproduction/
 ├── src/masc/                # MaSC package source (the released artifact)
-├── tests/                   # pure-Python smoke tests (no GPU)
+├── tests/                   # pure-Python tests (no GPU, no downloads)
 ├── repro_eval/              # reproduction helpers
 │   ├── data.py              # DreamBench++ + ORIDa sample builders
+│   ├── runs.py              # resumable result files and run provenance
 │   ├── geometry/            # CP comparators
 │   ├── pf/                  # PF comparator scorers
-│   └── masks/               # SAM3 text-prompted segmenter
+│   ├── masks/               # text-prompted segmenters
+│   └── analysis/            # appendix statistics, key table, mask perturbation
 ├── scripts/                 # reproduction CLIs (one per stage)
-└── configs/                 # one YAML per (matcher, dataset) tuple
+│   └── appendix/            # Table 2 intervals and the appendix tables
+├── configs/                 # one YAML per (matcher, dataset) tuple
+├── manifests/               # dataset and checkpoint sha256, pip freezes
+└── ASSETS.md                # datasets, checkpoints, revisions and licences
 ```
 
 Every JSONL row has the schema:
