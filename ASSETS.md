@@ -8,6 +8,24 @@ The revisions are those of a replication run of every table on 2026-10-10 (NVIDI
 
 ## Datasets
 
+### Environment-record correction (2026-10-17)
+
+The archived `manifests/pip-freeze-main.txt` predates a SAM3 reinstall and
+is preserved unchanged. Its SAM3 code revision, `0570b3a5be9c4e694f23d85232fb55f4a6f1f7fc`,
+is not the revision reported for the subsequent mask-generation jobs.
+The run-log and installed-package audit supplied by the authors identifies
+`c97c893969003d3e6803fd5d679f21e515aef5ce`: prestage job 9023011 pinned it
+at 17:52 on 2026-10-10, before mask job 9023318 at 18:28. This correction
+comes from that audit; the underlying cluster logs are not included here.
+The SAM3 checkpoint revision in the table below is unchanged. A historical
+freeze is not a complete record of the environment after later reinstalls.
+
+DreamBench++ mask prompts also have different sources: references use the
+first line of each dataset caption file; generated images use the subject
+folder keyword, retaining underscores. This documents the released code;
+it is not an independent verification of unavailable submission-time masks.
+No mask-generation behavior was changed for this release.
+
 Neither dataset is redistributed. The scripts rebuild every table after you obtain the data under its original terms.
 
 ### DreamBench++

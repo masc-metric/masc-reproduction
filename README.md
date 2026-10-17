@@ -12,6 +12,14 @@ rebuilds the paper's numbered tables, figures and appendix analyses from raw
 data. The few numbers that need a paid API or the original hardware are
 listed under [What is not regenerated](#what-is-not-regenerated).
 
+The frozen [camera-ready comparison bundle](artifacts/masc-camera-ready-stats-2026-10-17/)
+contains the supplementary DreamBench++ estimates and their subject-cluster
+intervals, exact key sets, source snapshots, and checksums. See
+[its provenance and verification instructions](artifacts/README.md) before
+using the numbers. These intervals do not apply to the original main-table
+estimates. Original-table uncertainty and direct DreamBench++ mask coverage
+remain incomplete; the bundle is not evidence that those commitments are met.
+
 ![MaSC method diagram](assets/method_diagram.png)
 
 MaSC is a non-LLM evaluation metric for single-concept text-to-image

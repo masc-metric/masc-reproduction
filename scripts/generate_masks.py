@@ -138,9 +138,9 @@ def main() -> int:
         output_root = output_root / method_full
         for subject_dir in sorted(p for p in method_dir.iterdir() if p.is_dir()):
             _, _, keyword = parse_dreambenchplus_subject(subject_dir.name)
-            # Replace underscores that were part of the keyword's original
-            # spelling; e.g. "ice cream" was stored verbatim by the dataset.
-            # Keywords appear unmodified in the text captions we saw.
+            # Preserve the folder keyword, including underscores, to match
+            # the released replication protocol. References instead use
+            # the first caption line; see ASSETS.md for this distinction.
             for img in sorted(subject_dir.iterdir()):
                 if not img.is_file() or img.suffix.lower() not in exts:
                     continue
